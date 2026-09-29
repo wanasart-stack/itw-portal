@@ -28,7 +28,7 @@ button,input{font:inherit}
 .hidden{display:none!important}
 a{color:var(--ink)}
 
-/* แถบหัว */
+/* header band */
 .band{border-bottom:3px solid var(--gold);background:var(--surface)}
 .band .wrap{padding-top:14px;padding-bottom:14px;display:flex;align-items:center;gap:14px;justify-content:space-between}
 .brand{display:flex;align-items:center;gap:12px;min-width:0}
@@ -40,11 +40,10 @@ a{color:var(--ink)}
   cursor:pointer;font-weight:600}
 .btn.ghost{background:transparent;color:var(--ink)}
 #bandActions .btn{white-space:nowrap;padding:8px 14px}
-a.btn{text-decoration:none;display:inline-block}
 .btn:disabled{opacity:.5;cursor:not-allowed}
 .btn:focus-visible,input:focus-visible,summary:focus-visible,.tab:focus-visible,.drop:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
 
-/* หน้าเข้าสู่ระบบ */
+/* login */
 .login{max-width:420px;margin:7vh auto 0;background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:30px 26px}
 .login h1{font-size:26px;margin-bottom:4px}
 .login p.lead{color:var(--muted);margin:0 0 22px}
@@ -57,8 +56,9 @@ input[type=text],input[type=password]{width:100%;padding:12px 14px;border:1.5px 
 .msg.err{background:var(--bad-soft);color:var(--bad)}
 .msg.info{background:var(--gold-soft);color:var(--text)}
 .foot{margin-top:18px;color:var(--muted);font-size:13px;text-align:center}
+.adminlink{display:block;margin:22px auto 0;background:none;border:none;color:var(--muted);text-decoration:underline;cursor:pointer;font-size:14px}
 
-/* หน้านักศึกษา */
+/* student */
 .who{display:grid;grid-template-columns:1fr auto;gap:8px 20px;align-items:end;padding:26px 0 18px;border-bottom:1px solid var(--line)}
 .who h1{font-size:clamp(24px,4.4vw,34px)}
 .who .meta{color:var(--muted);font-size:15px;margin-top:6px}
@@ -75,7 +75,7 @@ input[type=text],input[type=password]{width:100%;padding:12px 14px;border:1.5px 
 .creditbar i{display:block;height:100%;background:var(--ink)}
 .creditbar i.done{background:var(--ok)}
 
-/* ไม้บรรทัดชั่วโมง กพช. */
+/* the ruler: กพช. hours */
 .ruler{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:20px 22px 12px;margin:16px 0}
 .ruler-head{display:flex;justify-content:space-between;align-items:baseline;gap:12px;flex-wrap:wrap}
 .ruler-head h2{font-size:20px}
@@ -120,7 +120,7 @@ td.num,th.num{text-align:right}
 .legend{color:var(--muted);font-size:13px;margin:12px 2px}
 .empty{padding:26px;text-align:center;color:var(--muted);background:var(--surface);border:1px dashed var(--line);border-radius:10px}
 
-/* หน้าผู้ดูแล */
+/* admin */
 .admin h1{font-size:26px;margin:26px 0 6px}
 .admin .lead{color:var(--muted);margin:0 0 18px}
 .card{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:20px;margin-bottom:16px}
@@ -136,9 +136,6 @@ td.num,th.num{text-align:right}
 .log{font-size:14px;color:var(--muted);min-height:1.6em}
 .check{display:flex;gap:8px;align-items:flex-start;margin:14px 0;font-weight:400;color:var(--text)}
 .check input{margin-top:5px}
-.row{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:0 14px}
-.btnrow{display:flex;gap:10px;flex-wrap:wrap;margin-top:16px}
-code{background:var(--track);padding:1px 6px;border-radius:4px;font-size:.92em}
 
 @media (max-width:640px){
   .stats{grid-template-columns:1fr}
@@ -149,3 +146,64 @@ code{background:var(--track);padding:1px 6px;border-radius:4px;font-size:.92em}
   .login{margin-top:3vh;padding:24px 18px}
   .band .brand span{display:none}
 }
+
+.steps{margin:6px 0 0;padding-left:20px;color:var(--muted);font-size:14px}
+.row{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:0 14px}
+.btnrow{display:flex;gap:10px;flex-wrap:wrap;margin-top:16px}
+code{background:var(--track);padding:1px 6px;border-radius:4px;font-size:.92em}
+a.btn{text-decoration:none;display:inline-block}
+
+/* ตารางสอบ และ สรุปคุณสมบัติการจบ */
+.exam h2,.checklist h2{font-size:20px}
+.exam h2 .sub{font-family:"Sarabun",sans-serif;font-size:15px;font-weight:500;color:var(--muted);margin-left:6px}
+.exam table{min-width:520px}
+.nowrap{white-space:nowrap}
+.ck-head{display:flex;justify-content:space-between;align-items:baseline;gap:10px;flex-wrap:wrap}
+.ck-count{font-weight:600;color:var(--gold)}
+.checklist ul{list-style:none;margin:12px 0 4px;padding:0}
+.checklist li{display:grid;grid-template-columns:28px 1fr auto;grid-template-areas:"icon label value" "icon note note";gap:0 12px;
+  padding:10px 0;border-bottom:1px solid var(--line);align-items:center}
+.checklist li:last-child{border-bottom:none}
+.ck-icon{grid-area:icon;width:24px;height:24px;border-radius:50%;display:grid;place-items:center;font-weight:700;font-size:14px;
+  border:2px solid var(--line);color:transparent}
+.checklist li.ok .ck-icon{background:var(--ok);border-color:var(--ok);color:var(--surface)}
+.ck-label{grid-area:label;font-weight:600;color:var(--ink)}
+.ck-value{grid-area:value;text-align:right;font-variant-numeric:tabular-nums}
+.ck-note{grid-area:note;font-size:13px;color:var(--muted)}
+.checklist li.todo .ck-note{color:var(--bad)}
+.checklist li.ok .ck-note{color:var(--ok)}
+@media (max-width:640px){
+  .exam table{min-width:0}
+  .exam thead{display:none}
+  .exam table,.exam tbody,.exam tr,.exam td{display:block}
+  .exam tr{display:grid;grid-template-columns:auto 1fr;gap:2px 10px;padding:10px 4px;border-bottom:1px solid var(--line)}
+  .exam tr:last-child{border-bottom:none}
+  .exam td{border:none;padding:0}
+  .exam td:nth-child(2){text-align:right}
+  .exam td:nth-child(3),.exam td:nth-child(4){font-size:14px}
+  .checklist li{grid-template-columns:28px 1fr;grid-template-areas:"icon label" "icon value" "icon note"}
+  .ck-value{text-align:left;font-size:15px}
+}
+
+/* โลโก้และชื่อหน่วยงาน (หน้าเข้าสู่ระบบ) */
+.org{text-align:center;margin:5vh auto 0;max-width:420px}
+.org-logo{width:108px;height:108px;object-fit:contain;display:block;margin:0 auto}
+.org-seal{border-radius:50%;border:3px solid var(--gold);display:grid;place-items:center;
+  font-family:"Noto Serif Thai",serif;font-weight:700;font-size:26px;color:var(--ink);background:var(--surface)}
+.org-name{margin-top:12px;font-family:"Noto Serif Thai","Sarabun",serif;font-weight:700;font-size:20px;color:var(--ink);line-height:1.4}
+#viewLogin .login{margin-top:22px}
+
+/* ปุ่มรูปตา */
+.pw-wrap{position:relative}
+.pw-wrap input{padding-right:52px}
+.pw-eye{position:absolute;right:4px;top:50%;transform:translateY(-50%);width:44px;height:44px;border:none;background:none;
+  color:var(--muted);cursor:pointer;display:grid;place-items:center;border-radius:8px}
+.pw-eye:hover{color:var(--ink)}
+.pw-eye:focus-visible{outline:3px solid var(--gold);outline-offset:0}
+.pw-eye .eye-off{display:none}
+.pw-eye.on .eye-open{display:none}
+.pw-eye.on .eye-off{display:block}
+
+/* ข้อความผู้สร้าง */
+.credit{text-align:center;color:var(--muted);font-size:13px;line-height:1.6;padding:8px 18px 28px}
+@media (max-width:640px){ .org{margin-top:3vh} .org-logo{width:88px;height:88px} .org-name{font-size:18px} }
