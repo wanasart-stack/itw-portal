@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex">
+<title>ตรวจสอบผลการเรียน กศน.</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎓</text></svg>">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;500;600;700&family=Noto+Serif+Thai:wght@600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+<header class="band">
+  <div class="wrap">
+    <div class="brand">
+      <div class="seal" aria-hidden="true">ก</div>
+      <div><b>ตรวจสอบผลการเรียน</b><span>ข้อมูลจากระบบทะเบียน ITW51</span></div>
+    </div>
+    <div id="bandActions"><button class="btn ghost hidden" id="logoutBtn" type="button">ออกจากระบบ</button></div>
+  </div>
+</header>
+
+<main id="viewLogin" class="wrap">
+  <form class="login" id="loginForm" autocomplete="off">
+    <h1>เข้าสู่ระบบนักศึกษา</h1>
+    <p class="lead">ดูชั่วโมง กพช. ผลการเรียนรายวิชา และเกรดเฉลี่ยของคุณ</p>
+    <label for="inId">รหัสนักศึกษา</label>
+    <input id="inId" type="text" inputmode="numeric" placeholder="เช่น 6713001234" required>
+    <label for="inPw">รหัสผ่าน <span class="hint">เลขประจำตัวประชาชน 13 หลัก หรือเลข G</span></label>
+    <input id="inPw" type="password" placeholder="ไม่ต้องใส่ขีด" required>
+    <button class="btn" id="loginBtn" type="submit">เข้าสู่ระบบ</button>
+    <div id="loginMsg" class="msg hidden" role="alert"></div>
+    <div class="foot" id="dataStamp"></div>
+  </form>
+</main>
+
+<main id="viewStudent" class="wrap hidden"></main>
+
+<script src="assets/core.js"></script>
+<script src="assets/student.js"></script>
+</body>
+</html>
