@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex">
+<title>ผู้ดูแลระบบ: อัปเดตข้อมูลผลการเรียน</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🛠️</text></svg>">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;500;600;700&family=Noto+Serif+Thai:wght@600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/style.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+</head>
+<body>
+<header class="band">
+  <div class="wrap">
+    <div class="brand">
+      <div class="seal" aria-hidden="true">ก</div>
+      <div><b>ผู้ดูแลระบบ</b><span>อัปเดตข้อมูลผลการเรียนจาก ITW51</span></div>
+    </div>
+    <div id="bandActions"><a class="btn ghost" href="./">หน้านักศึกษา</a></div>
+  </div>
+</header>
+
+<main class="wrap admin">
+  <h1>อัปเดตข้อมูลนักศึกษา</h1>
+  <p class="lead">อัปโหลดไฟล์ ZIP ที่ส่งออกจาก ITW51 ระบบจะอ่านและเข้ารหัสข้อมูลในเบราว์เซอร์นี้ แล้วบันทึกขึ้น GitHub แทนที่ข้อมูลเดิม</p>
+
+  <div class="card">
+    <h2 style="font-size:18px">ข้อมูลที่ใช้อยู่ตอนนี้</h2>
+    <div id="curInfo" class="log" style="margin-top:6px">กำลังโหลด…</div>
+  </div>
+
+  <div class="card">
+    <h2 style="font-size:18px">1. เชื่อมต่อ GitHub</h2>
+    <div class="row">
+      <div><label for="ghOwner">ชื่อบัญชี (owner)</label><input id="ghOwner" type="text" placeholder="เช่น kor-sor-nor-maefahluang"></div>
+      <div><label for="ghRepo">ชื่อ repository</label><input id="ghRepo" type="text" placeholder="เช่น itw-portal"></div>
+      <div><label for="ghBranch">branch</label><input id="ghBranch" type="text" value="main"></div>
+    </div>
+    <label for="ghToken">Personal access token <span class="hint">สิทธิ์ Contents: Read and write เฉพาะ repository นี้</span></label>
+    <input id="ghToken" type="password" placeholder="github_pat_…" autocomplete="off">
+    <label class="check"><input type="checkbox" id="ghRemember"> จำการตั้งค่าไว้ในเบราว์เซอร์นี้ (อย่าเลือกถ้าเป็นเครื่องที่ใช้ร่วมกัน)</label>
+    <div class="btnrow"><button class="btn ghost" id="ghTest" type="button">ทดสอบการเชื่อมต่อ</button></div>
+    <div class="log" id="ghLog"></div>
+  </div>
+
+  <div class="card">
+    <h2 style="font-size:18px;margin-bottom:12px">2. เลือกไฟล์ ZIP จาก ITW51</h2>
+    <div class="drop" id="drop" tabindex="0" role="button" aria-label="เลือกไฟล์ ZIP">
+      <b>ลากไฟล์ ZIP มาวางที่นี่ หรือคลิกเพื่อเลือกไฟล์</b>
+      <span class="hint">เช่น ITW51DATA_040967.ZIP · ไฟล์ต้นฉบับไม่ถูกส่งไปที่ใด</span>
+    </div>
+    <input type="file" id="fileIn" accept=".zip,.ZIP" class="hidden">
+    <div id="parseBox" class="hidden" style="margin-top:16px">
+      <div class="log" id="parseLog"></div>
+      <div class="prog"><i id="parseBar"></i></div>
+      <div id="summary" class="hidden">
+        <div class="kv" id="sumKv"></div>
+        <p class="legend">ระบบอัปโหลดเฉพาะนักศึกษาที่ยังกำลังศึกษาอยู่ ผู้ที่จบการศึกษาหรือพ้นสภาพแล้วจะไม่ถูกนำขึ้นระบบ</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2 style="font-size:18px">3. บันทึกข้อมูล</h2>
+    <div class="btnrow">
+      <button class="btn" id="pushBtn" type="button" disabled>อัปเดตขึ้น GitHub</button>
+      <button class="btn ghost" id="dlBtn" type="button" disabled>ดาวน์โหลดโฟลเดอร์ data (อัปโหลดเอง)</button>
+    </div>
+    <div class="prog hidden" id="pubProg"><i id="pubBar"></i></div>
+    <div class="log" id="pubLog"></div>
+  </div>
+
+  <p class="legend">ข้อมูลของนักศึกษาแต่ละคนถูกเข้ารหัสด้วยรหัสนักศึกษาและเลขประจำตัวประชาชน/เลข G ของคนนั้น ไฟล์ใน GitHub จึงอ่านไม่ออกหากไม่รู้รหัสผ่าน ระบบไม่เก็บเลขประจำตัวประชาชนไว้ Token ถูกส่งไปที่ api.github.com เท่านั้น</p>
+</main>
+
+<script src="assets/core.js"></script>
+<script src="assets/admin.js"></script>
+</body>
+</html>
