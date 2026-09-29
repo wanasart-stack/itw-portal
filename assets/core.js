@@ -2,6 +2,7 @@
 (function (g) {
   "use strict";
 
+  const VERSION = 4;         // เวอร์ชันโปรแกรม (ใช้ตรวจว่าข้อมูลสร้างจากโปรแกรมรุ่นล่าสุดหรือไม่)
   const BUCKETS = 64;        // จำนวนไฟล์ข้อมูลใน data/b/
   const ITER = 100000;       // รอบ PBKDF2 (ยิ่งมากยิ่งเดารหัสยาก)
   const LEVELS = { "1": "ประถมศึกษา", "2": "มัธยมศึกษาตอนต้น", "3": "มัธยมศึกษาตอนปลาย" };
@@ -109,7 +110,7 @@
       const step = (k, f) => log(`ระดับ${LEVELS[lv]}: กำลังอ่าน${k}…`, (li + f) / 3);
 
       step("ข้อมูลนักศึกษา", 0.1); await tick();
-      const S = await read(sf, ["ID", "STD_CODE", "PRENAME", "NAME", "SURNAME", "GRP_CODE", "CARDID", "FIN_CAUSE"]);
+      const S = await read(sf, ["ID", "STD_CODE", "PRENAME", "NAME", "SURNAME", "GRP_CODE", "CARDID", "FIN_CAUSE", "NT_SEM"]);
       step("ผลการเรียน", 0.3); await tick();
       const G = lf("grade") ? await read(lf("grade"), ["STD_CODE", "SEMESTRY", "SUB_CODE", "MIDTERM", "FINAL", "TOTAL", "GRADE"]) : [];
       step("กิจกรรม กพช.", 0.6); await tick();
@@ -117,10 +118,13 @@
       step("รายวิชา", 0.8); await tick();
       const SU = lf("subject") ? await read(lf("subject"), ["SUB_CODE", "SUB_NAME", "SUB_TYPE", "SUB_CREDIT"]) : [];
       const R = lf("rem") ? await read(lf("rem"), ["STD_CODE", "SEMESTRY", "SUB_CODE", "SCHOOL"]) : [];
-      const RU = lf("rule") ? (await read(lf("rule"), ["FIN_REQ", "FIN_ELEC", "FIN_ACT", "FIN_ACT2"]))[0] : null;
+      const RU = lf("rule") ? (await read(lf("rule"), ["FIN_REQ", "FIN_ELEC", "FIN_ACT", "FIN_ACT2", "FIN_TIM"]))[0] : null;
+      step("ตารางสอบและผลประเมินคุณธรรม", 0.9); await tick();
+      const SC = lf("schedule") ? await read(lf("schedule"), ["SEMESTRY", "SUB_CODE", "EXAM_DAY", "EXAM_START", "EXAM_END"]) : [];
+      const V = lf("virtue") ? await read(lf("virtue"), ["STD_CODE", "SEMESTER", "SUMLEVEL"]) : [];
 
       // นักศึกษาที่เข้าเรียนก่อนภาคเรียนที่ 2/2556 ใช้เกณฑ์ กพช. เดิม (FIN_ACT2)
-      const ruleNew = { req: RU?.FIN_REQ ?? 0, elec: RU?.FIN_ELEC ?? 0, act: RU?.FIN_ACT ?? 200 };
+      const ruleNew = { req: RU?.FIN_REQ ?? 0, elec: RU?.FIN_ELEC ?? 0, act: RU?.FIN_ACT ?? 200, tim: RU?.FIN_TIM || 4 };
       const ruleOld = { ...ruleNew, act: RU?.FIN_ACT2 || ruleNew.act };
       const entryKey = id => (+id.slice(0, 2)) * 10 + (+id.slice(2, 3));
 
@@ -129,21 +133,35 @@
       for (const x of G) (gi[x.STD_CODE] ||= []).push([x.SEMESTRY, x.SUB_CODE, x.MIDTERM, x.FINAL, x.TOTAL, x.GRADE]);
       for (const x of A) (ai[x.STD_CODE] ||= []).push([x.SEMESTRY, x.ACTIVITY, x.HOUR || 0]);
       for (const x of R) (ri[x.STD_CODE] ||= []).push([x.SEMESTRY, x.SUB_CODE, x.SCHOOL]);
+      // ตารางสอบ: ภาคเรียน -> รหัสวิชา -> [วันสอบ, เวลาเริ่ม, เวลาสิ้นสุด]
+      const sched = {};
+      for (const x of SC) if (x.EXAM_DAY) (sched[x.SEMESTRY] ||= {})[x.SUB_CODE] = [x.EXAM_DAY, x.EXAM_START || 0, x.EXAM_END || 0];
+      // ภาคเรียนปัจจุบัน = ภาคเรียนล่าสุดที่มีการลงทะเบียนในระดับนี้ (แสดงตารางสอบเฉพาะภาคเรียนนี้)
+      let curSem = "";
+      for (const x of G) if (semKey(x.SEMESTRY) > semKey(curSem)) curSem = x.SEMESTRY;
+      const vi = {};
+      for (const x of V) if (x.SEMESTER && x.SUMLEVEL !== null) (vi[x.STD_CODE] ||= []).push([x.SEMESTER, x.SUMLEVEL]);
 
       for (const s of S) {
         const gr = gi[s.STD_CODE] || [], rem = ri[s.STD_CODE] || [];
         const sub = {};
         for (const c of [...gr.map(x => x[1]), ...rem.map(x => x[1])]) if (subj[c]) sub[c] = subj[c];
         const gp = groups[s.GRP_CODE] || [];
+        // ตารางสอบ เฉพาะนักศึกษาที่ลงทะเบียนในภาคเรียนปัจจุบัน
+        let lastSem = "";
+        for (const x of gr) if (semKey(x[0]) > semKey(lastSem)) lastSem = x[0];
+        const exam = [];
+        if (lastSem === curSem && sched[lastSem]) for (const x of gr) if (x[0] === lastSem && sched[lastSem][x[1]]) exam.push([x[1], ...sched[lastSem][x[1]]]);
         const fc = s.FIN_CAUSE;
         students.push({
           pw: normPw(s.CARDID),
           fin: fc !== null && fc !== 0,
           data: {
-            v: 1, id: s.ID, lv, pn: s.PRENAME, fn: s.NAME, ln: s.SURNAME,
+            v: 2, id: s.ID, lv, pn: s.PRENAME, fn: s.NAME, ln: s.SURNAME,
             grp: s.GRP_CODE, grpName: gp[0] || "", adv: gp[1] || "",
             st: fc === 1 ? "จบการศึกษา" : (fc === null || fc === 0) ? "กำลังศึกษา" : "พ้นสภาพนักศึกษา",
             sub, gr, act: ai[s.STD_CODE] || [], rem,
+            nt: s.NT_SEM || "", vir: vi[s.STD_CODE] || [], examSem: exam.length ? lastSem : "", exam,
             rule: entryKey(s.ID) < 562 ? ruleOld : ruleNew
           }
         });
@@ -172,10 +190,10 @@
     const files = {};
     buckets.forEach((b, i) => { files[bucketFile(i)] = JSON.stringify(b); });
     const byLevel = { "1": 0, "2": 0, "3": 0 }; list.forEach(s => byLevel[s.data.lv]++);
-    const meta = { version: Date.now().toString(36), updatedAt: new Date().toISOString(), fileName, total: list.length, byLevel, buckets: BUCKETS };
+    const meta = { appVersion: VERSION, version: Date.now().toString(36), updatedAt: new Date().toISOString(), fileName, total: list.length, byLevel, buckets: BUCKETS };
     files["data/meta.json"] = JSON.stringify(meta, null, 2);
     return { files, meta };
   }
 
-  g.ITW = { BUCKETS, ITER, LEVELS, esc, normId, normPw, bucketOf, bucketFile, derive, encrypt, decrypt, semKey, semLabel, fmtThaiDate, readDBF, parseZip, buildFiles, pool };
+  g.ITW = { VERSION, BUCKETS, ITER, LEVELS, esc, normId, normPw, bucketOf, bucketFile, derive, encrypt, decrypt, semKey, semLabel, fmtThaiDate, readDBF, parseZip, buildFiles, pool };
 })(window);

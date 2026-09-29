@@ -1,4 +1,4 @@
-/* หน้าผู้ดูแลระบบ: อ่าน ZIP -> เข้ารหัส -> commit ไฟล์ data/ ขึ้น GitHub (เฉพาะนักศึกษาที่กำลังศึกษา) */
+/* หน้าผู้ดูแลระบบ: อ่าน ZIP -> เข้ารหัส -> commit ไฟล์ data/ ขึ้น GitHub */
 (function () {
 "use strict";
 const $ = id => document.getElementById(id);
@@ -72,8 +72,11 @@ async function refreshInfo() {
     const r = await fetch("data/meta.json?t=" + Date.now(), { cache: "no-store" });
     if (!r.ok) throw 0;
     const m = await r.json(), lv = m.byLevel || {};
+    const old = (m.appVersion || 0) < ITW.VERSION;
     el.innerHTML = `ไฟล์ <b>${esc(m.fileName)}</b> · อัปเดตเมื่อ ${esc(ITW.fmtThaiDate(m.updatedAt))}<br>
-      นักศึกษาที่เข้าระบบได้ ${Number(m.total).toLocaleString("th-TH")} คน (ประถม ${lv["1"] || 0} · ม.ต้น ${lv["2"] || 0} · ม.ปลาย ${lv["3"] || 0})`;
+      นักศึกษาที่เข้าระบบได้ ${Number(m.total).toLocaleString("th-TH")} คน (ประถม ${lv["1"] || 0} · ม.ต้น ${lv["2"] || 0} · ม.ปลาย ${lv["3"] || 0})<br>
+      สร้างด้วยโปรแกรมเวอร์ชัน ${esc(m.appVersion || "เก่า")}` +
+      (old ? `<div class="msg err">ข้อมูลนี้สร้างจากโปรแกรมเวอร์ชันเก่า ยังไม่มีตารางสอบและผลประเมินคุณธรรม กรุณาอัปโหลดไฟล์ ZIP แล้วกดอัปเดตขึ้น GitHub ใหม่</div>` : "");
   } catch { el.textContent = "ยังไม่มีข้อมูลในระบบ อัปโหลดไฟล์ ZIP เพื่อเริ่มใช้งาน"; }
 }
 
@@ -90,7 +93,6 @@ async function handleZip(file) {
     $("pushBtn").disabled = $("dlBtn").disabled = false;
   } catch (e) { plog("อ่านไฟล์ไม่สำเร็จ: " + (e.message || e), 0); }
 }
-// เฉพาะนักศึกษาที่กำลังศึกษา และมีเลขบัตร/เลข G
 function selected() {
   return parsed.students.filter(s => !s.fin && s.pw.length >= 5);
 }
@@ -109,7 +111,7 @@ function updateSummary() {
   $("sumKv").innerHTML = kv.map(([k, v]) => `<div><div class="k">${esc(k)}</div><div class="v">${esc(v)}</div></div>`).join("");
 }
 
-/* ---------- เข้ารหัส (ทำครั้งเดียวต่อไฟล์) ---------- */
+/* ---------- เข้ารหัส (ทำครั้งเดียวต่อการเลือก) ---------- */
 async function ensureBuilt() {
   const key = parsed.fileName;
   if (built && built.key === key) return built;
@@ -193,4 +195,5 @@ $("pushBtn").addEventListener("click", pushToGitHub);
 $("dlBtn").addEventListener("click", downloadData);
 loadSettings();
 refreshInfo();
+$("appVer").textContent = "โปรแกรมเวอร์ชัน " + ITW.VERSION;
 })();
