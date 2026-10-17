@@ -1,13 +1,16 @@
 {
-  "appVersion": 4,
-  "version": "mv63r9r2",
-  "updatedAt": "2026-10-13T03:09:30.782Z",
+  "appVersion": 5,
+  "version": "mvcb6csq",
+  "updatedAt": "2026-10-17T11:23:48.938Z",
   "fileName": "ITW51DATA_121069.ZIP",
-  "total": 5790,
+  "total": 6304,
   "byLevel": {
-    "1": 2149,
-    "2": 1603,
-    "3": 2038
+    "1": 2306,
+    "2": 1767,
+    "3": 2231
   },
-  "buckets": 64
+  "buckets": 64,
+  "curSem": "69/1",
+  "gradFrom": "68/2",
+  "grads": 514
 }
