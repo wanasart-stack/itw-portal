@@ -75,8 +75,9 @@ async function refreshInfo() {
     const old = (m.appVersion || 0) < ITW.VERSION;
     el.innerHTML = `ไฟล์ <b>${esc(m.fileName)}</b> · อัปเดตเมื่อ ${esc(ITW.fmtThaiDate(m.updatedAt))}<br>
       นักศึกษาที่เข้าระบบได้ ${Number(m.total).toLocaleString("th-TH")} คน (ประถม ${lv["1"] || 0} · ม.ต้น ${lv["2"] || 0} · ม.ปลาย ${lv["3"] || 0})<br>
+      ${m.gradFrom ? `รวมผู้จบการศึกษาภาคเรียน ${esc(m.gradFrom)}–${esc(m.curSem)} จำนวน ${Number(m.grads || 0).toLocaleString("th-TH")} คน<br>` : ""}
       สร้างด้วยโปรแกรมเวอร์ชัน ${esc(m.appVersion || "เก่า")}` +
-      (old ? `<div class="msg err">ข้อมูลนี้สร้างจากโปรแกรมเวอร์ชันเก่า ยังไม่มีตารางสอบและผลประเมินคุณธรรม กรุณาอัปโหลดไฟล์ ZIP แล้วกดอัปเดตขึ้น GitHub ใหม่</div>` : "");
+      (old ? `<div class="msg err">ข้อมูลนี้สร้างจากโปรแกรมเวอร์ชันเก่า ยังไม่รองรับความสามารถล่าสุด กรุณาอัปโหลดไฟล์ ZIP แล้วกดอัปเดตขึ้น GitHub ใหม่</div>` : "");
   } catch { el.textContent = "ยังไม่มีข้อมูลในระบบ อัปโหลดไฟล์ ZIP เพื่อเริ่มใช้งาน"; }
 }
 
@@ -93,20 +94,25 @@ async function handleZip(file) {
     $("pushBtn").disabled = $("dlBtn").disabled = false;
   } catch (e) { plog("อ่านไฟล์ไม่สำเร็จ: " + (e.message || e), 0); }
 }
+// นำขึ้นระบบ: นักศึกษาที่กำลังศึกษา + ผู้จบการศึกษาภายใน 1 ภาคเรียน (ต้องมีเลขบัตร/เลข G)
+const included = s => !s.fin || s.recentGrad;
 function selected() {
-  return parsed.students.filter(s => !s.fin && s.pw.length >= 5);
+  return parsed.students.filter(s => included(s) && s.pw.length >= 5);
 }
 function updateSummary() {
   if (!parsed) return;
-  const pool = parsed.students.filter(s => !s.fin);
+  const pool = parsed.students.filter(included);
   const ok = selected();
+  const grads = ok.filter(s => s.recentGrad).length;
   const by = { "1": 0, "2": 0, "3": 0 }; ok.forEach(s => by[s.data.lv]++);
   const kv = [
-    ["นักศึกษาที่กำลังศึกษา (เข้าระบบได้)", ok.length.toLocaleString("th-TH")],
+    ["เข้าระบบได้ทั้งหมด", ok.length.toLocaleString("th-TH")],
+    ["กำลังศึกษา", (ok.length - grads).toLocaleString("th-TH")],
+    [`จบภาคเรียน ${parsed.students.gradFrom}–${parsed.students.curSem} (ดูได้อีก 1 ภาคเรียน)`, grads.toLocaleString("th-TH")],
     ["ประถมศึกษา", by["1"]], ["ม.ต้น", by["2"]], ["ม.ปลาย", by["3"]],
     ["ใช้เลข G", ok.filter(s => s.pw.startsWith("G")).length],
     ["ไม่มีเลขบัตร (เข้าระบบไม่ได้)", pool.length - ok.length],
-    ["จบ/พ้นสภาพ (ไม่นำขึ้นระบบ)", (parsed.students.length - pool.length).toLocaleString("th-TH")],
+    ["จบนานกว่า 1 ภาคเรียน/พ้นสภาพ (ไม่นำขึ้นระบบ)", (parsed.students.length - pool.length).toLocaleString("th-TH")],
   ];
   $("sumKv").innerHTML = kv.map(([k, v]) => `<div><div class="k">${esc(k)}</div><div class="v">${esc(v)}</div></div>`).join("");
 }
@@ -123,7 +129,7 @@ async function ensureBuilt() {
     bar.style.width = (d / n * 60) + "%";
     const eta = d > 50 ? Math.round((Date.now() - t0) / d * (n - d) / 1000) : null;
     log.textContent = `กำลังเข้ารหัสข้อมูลนักศึกษา ${d.toLocaleString("th-TH")} / ${n.toLocaleString("th-TH")} คน` + (eta != null ? ` (เหลืออีกประมาณ ${Math.ceil(eta / 60)} นาที)` : "");
-  });
+  }, { curSem: parsed.students.curSem, gradFrom: parsed.students.gradFrom, grads: list.filter(s => s.recentGrad).length });
   built = { key, files, meta };
   return built;
 }

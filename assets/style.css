@@ -207,3 +207,5 @@ a.btn{text-decoration:none;display:inline-block}
 /* ข้อความผู้สร้าง */
 .credit{text-align:center;color:var(--muted);font-size:13px;line-height:1.6;padding:8px 18px 28px}
 @media (max-width:640px){ .org{margin-top:3vh} .org-logo{width:88px;height:88px} .org-name{font-size:18px} }
+
+.grad-note{margin:16px 0 0}

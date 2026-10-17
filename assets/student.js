@@ -49,7 +49,7 @@ async function onLogin(ev){
     show("student");
   } catch (e) {
     if (e && e.message === "nodata") msg("err", "ยังไม่มีข้อมูลในระบบ กรุณาติดต่อเจ้าหน้าที่ทะเบียน");
-    else if (e && e.message === "nomatch") msg("err", "รหัสนักศึกษาหรือรหัสผ่านไม่ถูกต้อง หรือไม่ได้อยู่ในสถานะกำลังศึกษา ตรวจสอบตัวเลขอีกครั้ง หากยังเข้าไม่ได้ให้ติดต่อเจ้าหน้าที่ทะเบียน");
+    else if (e && e.message === "nomatch") msg("err", "รหัสนักศึกษาหรือรหัสผ่านไม่ถูกต้อง หรือจบการศึกษาเกิน 1 ภาคเรียนแล้ว ตรวจสอบตัวเลขอีกครั้ง หากยังเข้าไม่ได้ให้ติดต่อเจ้าหน้าที่ทะเบียน");
     else msg("err", "เชื่อมต่อระบบไม่สำเร็จ ตรวจสอบอินเทอร์เน็ตแล้วลองใหม่อีกครั้ง");
   } finally { btn.disabled = false; btn.textContent = "เข้าสู่ระบบ"; }
 }
@@ -215,6 +215,7 @@ function renderStudent(d){
       </div>
       <span class="status${active?"":" off"}">${esc(d.st)}</span>
     </section>
+    ${d.finSem ? `<div class="msg info grad-note">คุณจบการศึกษาเมื่อ${esc(ITW.semLabel(d.finSem))} ระบบเปิดให้ดูผลการเรียนได้ถึงสิ้น${esc(ITW.semLabel(d.visibleUntil || ITW.nextSem(d.finSem)))} หลังจากนั้นข้อมูลจะถูกนำออกจากระบบ หากต้องการเอกสารรับรองผลการเรียน ติดต่องานทะเบียน</div>` : ""}
 
     <section class="stats" aria-label="สรุปผลการเรียน">
       <div class="stat"><div class="k">เกรดเฉลี่ยสะสม</div><div class="v">${st.gpax===null?"-":st.gpax.toFixed(2)}</div></div>

@@ -2,7 +2,7 @@
 (function (g) {
   "use strict";
 
-  const VERSION = 4;         // เวอร์ชันโปรแกรม (ใช้ตรวจว่าข้อมูลสร้างจากโปรแกรมรุ่นล่าสุดหรือไม่)
+  const VERSION = 5;         // เวอร์ชันโปรแกรม (ใช้ตรวจว่าข้อมูลสร้างจากโปรแกรมรุ่นล่าสุดหรือไม่)
   const BUCKETS = 64;        // จำนวนไฟล์ข้อมูลใน data/b/
   const ITER = 100000;       // รอบ PBKDF2 (ยิ่งมากยิ่งเดารหัสยาก)
   const LEVELS = { "1": "ประถมศึกษา", "2": "มัธยมศึกษาตอนต้น", "3": "มัธยมศึกษาตอนปลาย" };
@@ -54,6 +54,9 @@
   }
 
   function semKey(s) { const m = /^(\d{2})\/(\d)$/.exec(s || ""); return m ? (+m[1]) * 10 + (+m[2]) : 0; }
+  // ภาคเรียนถัดไป / ก่อนหน้า เช่น "68/2" -> "69/1", "69/1" -> "68/2"
+  function nextSem(s) { const m = /^(\d{2})\/(\d)$/.exec(s || ""); if (!m) return ""; return +m[2] >= 2 ? `${String(+m[1] + 1).padStart(2, "0")}/1` : `${m[1]}/2`; }
+  function prevSem(s) { const m = /^(\d{2})\/(\d)$/.exec(s || ""); if (!m) return ""; return +m[2] >= 2 ? `${m[1]}/1` : `${String(+m[1] - 1).padStart(2, "0")}/2`; }
   function semLabel(s) { const m = /^(\d{2})\/(\d)$/.exec(s || ""); return m ? `ภาคเรียนที่ ${m[2]}/25${m[1]}` : (s || "-"); }
   function fmtThaiDate(iso) { try { return new Date(iso).toLocaleString("th-TH", { dateStyle: "long", timeStyle: "short" }); } catch { return iso; } }
 
@@ -101,6 +104,7 @@
     if (grpFile) for (const x of await read(grpFile, ["GRP_CODE", "GRP_NAME", "GRP_ADVIS"])) groups[x.GRP_CODE] = [x.GRP_NAME, x.GRP_ADVIS];
 
     const students = [];
+    let latestSem = "";   // ภาคเรียนปัจจุบันของทั้งศูนย์ (ภาคเรียนล่าสุดที่มีการลงทะเบียน)
     const lvs = ["1", "2", "3"];
     for (let li = 0; li < lvs.length; li++) {
       const lv = lvs[li];
@@ -110,7 +114,7 @@
       const step = (k, f) => log(`ระดับ${LEVELS[lv]}: กำลังอ่าน${k}…`, (li + f) / 3);
 
       step("ข้อมูลนักศึกษา", 0.1); await tick();
-      const S = await read(sf, ["ID", "STD_CODE", "PRENAME", "NAME", "SURNAME", "GRP_CODE", "CARDID", "FIN_CAUSE", "NT_SEM"]);
+      const S = await read(sf, ["ID", "STD_CODE", "PRENAME", "NAME", "SURNAME", "GRP_CODE", "CARDID", "FIN_CAUSE", "FIN_SEM", "NT_SEM"]);
       step("ผลการเรียน", 0.3); await tick();
       const G = lf("grade") ? await read(lf("grade"), ["STD_CODE", "SEMESTRY", "SUB_CODE", "MIDTERM", "FINAL", "TOTAL", "GRADE"]) : [];
       step("กิจกรรม กพช.", 0.6); await tick();
@@ -139,6 +143,7 @@
       // ภาคเรียนปัจจุบัน = ภาคเรียนล่าสุดที่มีการลงทะเบียนในระดับนี้ (แสดงตารางสอบเฉพาะภาคเรียนนี้)
       let curSem = "";
       for (const x of G) if (semKey(x.SEMESTRY) > semKey(curSem)) curSem = x.SEMESTRY;
+      if (semKey(curSem) > semKey(latestSem)) latestSem = curSem;
       const vi = {};
       for (const x of V) if (x.SEMESTER && x.SUMLEVEL !== null) (vi[x.STD_CODE] ||= []).push([x.SEMESTER, x.SUMLEVEL]);
 
@@ -156,11 +161,14 @@
         students.push({
           pw: normPw(s.CARDID),
           fin: fc !== null && fc !== 0,
+          grad: fc === 1,
+          finSem: s.FIN_SEM || "",
           data: {
             v: 2, id: s.ID, lv, pn: s.PRENAME, fn: s.NAME, ln: s.SURNAME,
             grp: s.GRP_CODE, grpName: gp[0] || "", adv: gp[1] || "",
             st: fc === 1 ? "จบการศึกษา" : (fc === null || fc === 0) ? "กำลังศึกษา" : "พ้นสภาพนักศึกษา",
             sub, gr, act: ai[s.STD_CODE] || [], rem,
+            finSem: fc === 1 ? (s.FIN_SEM || "") : "",
             nt: s.NT_SEM || "", vir: vi[s.STD_CODE] || [], examSem: exam.length ? lastSem : "", exam,
             rule: entryKey(s.ID) < 562 ? ruleOld : ruleNew
           }
@@ -168,6 +176,16 @@
       }
     }
     if (!students.length) throw new Error("ไม่พบไฟล์ student.dbf ในโฟลเดอร์ระดับชั้น 1, 2 หรือ 3 ตรวจสอบว่าเป็นไฟล์ที่ส่งออกจาก ITW51");
+    // ผู้จบการศึกษาเข้าดูได้อีก 1 ภาคเรียนหลังจบ:
+    // นำขึ้นระบบเฉพาะผู้ที่จบในภาคเรียนปัจจุบัน หรือภาคเรียนก่อนหน้า 1 ภาคเรียน
+    // เมื่อเริ่มภาคเรียนใหม่และอัปโหลดข้อมูล ผู้ที่จบนานกว่านั้นจะถูกนำออกโดยอัตโนมัติ
+    const gradFrom = prevSem(latestSem);
+    for (const s of students) {
+      s.recentGrad = s.grad && !!s.finSem && semKey(s.finSem) >= semKey(gradFrom);
+      if (s.recentGrad) s.data.visibleUntil = nextSem(s.finSem);
+    }
+    students.curSem = latestSem;
+    students.gradFrom = gradFrom;
     log(`อ่านไฟล์ ${file.name} เรียบร้อย`, 1);
     return students;
   }
@@ -178,7 +196,7 @@
   }
 
   /* ---------- เข้ารหัสทั้งหมด -> { "data/b/00.json": "...", ..., "data/meta.json": "..." } ---------- */
-  async function buildFiles(list, fileName, onProgress) {
+  async function buildFiles(list, fileName, onProgress, extraMeta) {
     const buckets = Array.from({ length: BUCKETS }, () => ({ salt: b64(crypto.getRandomValues(new Uint8Array(16))), iter: ITER, e: {} }));
     let done = 0;
     await pool(list, 12, async s => {
@@ -190,10 +208,10 @@
     const files = {};
     buckets.forEach((b, i) => { files[bucketFile(i)] = JSON.stringify(b); });
     const byLevel = { "1": 0, "2": 0, "3": 0 }; list.forEach(s => byLevel[s.data.lv]++);
-    const meta = { appVersion: VERSION, version: Date.now().toString(36), updatedAt: new Date().toISOString(), fileName, total: list.length, byLevel, buckets: BUCKETS };
+    const meta = { appVersion: VERSION, version: Date.now().toString(36), updatedAt: new Date().toISOString(), fileName, total: list.length, byLevel, buckets: BUCKETS, ...(extraMeta || {}) };
     files["data/meta.json"] = JSON.stringify(meta, null, 2);
     return { files, meta };
   }
 
-  g.ITW = { VERSION, BUCKETS, ITER, LEVELS, esc, normId, normPw, bucketOf, bucketFile, derive, encrypt, decrypt, semKey, semLabel, fmtThaiDate, readDBF, parseZip, buildFiles, pool };
+  g.ITW = { VERSION, BUCKETS, ITER, LEVELS, esc, normId, normPw, bucketOf, bucketFile, derive, encrypt, decrypt, semKey, semLabel, nextSem, prevSem, fmtThaiDate, readDBF, parseZip, buildFiles, pool };
 })(window);
