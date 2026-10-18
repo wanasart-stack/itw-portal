@@ -220,3 +220,13 @@ h1,h2,h3{font-weight:700;letter-spacing:0}
 details.sem>summary h3{font-size:18px}
 .tab{font-family:"K2D","Sarabun",sans-serif;font-size:16px}
 @media (max-width:640px){ .org-name{font-size:21px} .login h1{font-size:26px} }
+
+/* แถบหัวสีม่วง (โทนเดียวกับโลโก้ กศน./สกร.) */
+:root{--band:#5B2C83;--band-ink:#FFFFFF}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){--band:#3E1D5C} }
+:root[data-theme="dark"]{--band:#3E1D5C}
+.band{background:var(--band);border-bottom:3px solid var(--gold)}
+.band .brand b{color:var(--band-ink)}
+#bandActions .btn.ghost{color:var(--band-ink);border-color:rgba(255,255,255,.75);background:transparent}
+#bandActions .btn.ghost:hover{background:rgba(255,255,255,.12)}
+#bandActions .btn:focus-visible{outline-color:#F2C46D}
